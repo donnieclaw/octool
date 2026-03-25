@@ -1793,7 +1793,7 @@ try {
         echo "[openclaw] 直连模式"
         openclaw gateway run --bind loopback
     fi
-};
+}`;
 
       return `cat >> ~/.bash_profile << 'OCEOF'
 ${proxyDetect}
@@ -1848,9 +1848,6 @@ ${agentRestoreLines}
     source ~/.bash_profile
     echo "[OK] 已恢复到 $TAG"
 }
-
-EOF`;
-  }
 
 OCEOF`;
     }
