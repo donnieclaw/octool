@@ -15,7 +15,8 @@ metadata: {"clawdbot":{"emoji":"🖥️"}}
 - **Git / 本地双模备份**：支持将配置备份至本地目录或私有 GitHub 仓库。
 - **安全配置向导**：运行于浏览器本地沙箱，为用户生成可供手动执行的环境配置脚本。
 - **Agent 数据保护**：覆盖 workspace 目录下的关键文件快照，防止数据丢失。
-- **终端快捷指令生成**：为用户提供 oc-save、oc-rec 等常用备份指令的文本示例，方便在终端中手动使用。
+- **终端快捷指令生成**：为用户提供 `oc`（智能代理启动）、`oc-save`（备份当前环境及自定义文件）、`oc-rec`（一键恢复设定版本）等常用指令的文本示例，方便在终端中手动使用。
+- **灵活的自定义备份**：界面提供直观的文件拖拽区，支持用户根据自身需求，随时增减需要一同打包备份的额外文件夹或特定文件。
 
 ### 🔒 隐私与安全声明 (使用前必读)
 - **真正的零外部请求**：本工具已移除所有外部字体和资源依赖（如 Google Fonts），100% 仅在本地浏览器沙箱运行。除了在 Git 模式下直接请求官方的 `api.github.com` 接口外，绝对没有任何隐形的向第三方服务器发送请求的代码（强烈建议您直接断网运行体验基础功能以验证安全性）。
@@ -30,7 +31,8 @@ metadata: {"clawdbot":{"emoji":"🖥️"}}
 - **Dual Backup Modes (Git / Local)**: Supports backing up configurations to local directories or private GitHub repositories.
 - **Secure Configuration Wizard**: Runs in a local browser sandbox, generating environment configuration scripts for manual terminal execution.
 - **Agent Data Protection**: Targets key files in the workspace directory for snapshotting to prevent data loss.
-- **Terminal Command Generator**: Provides text-based command snippets (e.g., oc-save, oc-rec) for manual use in the terminal.
+- **Terminal Command Generator**: Provides text-based command snippets for manual terminal use, including `oc` (smart proxy startup), `oc-save` (backup current environment & custom files), and `oc-rec` (restore specific versions).
+- **Flexible Custom Backups**: The UI features an intuitive drag-and-drop area, allowing users to easily add or remove extra folders/files to be included in the backup package according to their needs.
 
 ### 🔒 Privacy & Security (Please Read)
 - **True Zero External Tracking**: All external dependencies (e.g., Google Fonts) have been removed. This tool runs 100% client-side in your local browser sandbox. It makes no external backend calls besides the official `api.github.com` if you opt into Git mode (you can verify its safety by running it completely offline).
