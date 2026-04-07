@@ -1247,7 +1247,7 @@
             <input type="password" id="go-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="margin-bottom:8px;"
               title="用于读取及推送的 GitHub Token" />
             <div class="fd-hint" style="margin-bottom:16px;">
-              安全披露：Token 仅存储在浏览器 localStorage 中，用于直接请求 GitHub API，不会上传到任何第三方服务器。
+              安全披露：Token 仅存储在浏览器 localStorage 中（仅限本机），仅用于直接请求 GitHub API。它既不会上传到第三方服务器，也不会在网络请求中泄露。您可以随时通过“重新配置”来清除此本地存储。
             </div>
           </div>
 
@@ -1754,7 +1754,9 @@
 
       // proxy 检测逻辑
       const proxyDetect = proxy ? `
+# --- 代理自动探测逻辑 (仅用于提升模型拉取速度) ---
 _detect_proxy() {
+    # 使用 Node.js 调用系统 scutil 接口获取 macOS 网络代理配置
     node -e "
 const { execSync } = require('child_process');
 try {
@@ -1770,7 +1772,7 @@ try {
 _git_push_auto() {
     PROXY=$(_detect_proxy)
     if [ -n "$PROXY" ]; then
-        echo "[git] 代理: $PROXY"
+        echo "[git] 发现系统代理: $PROXY"
         HTTPS_PROXY=$PROXY git push
         HTTPS_PROXY=$PROXY git push origin $1
     else
@@ -1784,8 +1786,10 @@ _git_push_auto() {
 }`;
 
       const ocStart = `
+# --- oc 快捷命令 (重启容器并应用代理) ---
 oc() {
     lsof -ti:18789 | xargs kill -9 2>/dev/null
+    # 获取当前最新的系统代理设置
     DETECTED_PROXY=$(node -e "
 const { execSync } = require('child_process');
 try {
@@ -1810,23 +1814,29 @@ ${proxyDetect}
 ${ocStart}
 
 oc-save() {
+    # --- 统一备份逻辑: 将配置与 Agent 增量同步至 dotfiles ---
     local MSG="" TAG=""
     while [[ $# -gt 0 ]]; do
         case $1 in -m) MSG="$2"; shift 2;; -t) TAG="$2"; shift 2;; *) shift;; esac
     done
     cd ~/dotfiles
-    cp ~/.bash_profile bash_profile
-    cp ~/.openclaw/openclaw.json openclaw.json
+    cp ~/.bash_profile bash_profile # 备份环境配置
+    cp ~/.openclaw/openclaw.json openclaw.json # 备份核心配置
     rsync -a --delete --exclude="miaoxiang/" ~/.openclaw/skills/ skills/
 ${agentBackupLines}
+    
+    # 自动计算下一版本号 (如 v1.0 -> v1.1)
     LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0")
     AUTO_TAG=$(echo $LAST_TAG | sed 's/v//' | awk -F. '{printf "v%d.%d", $1, $2+1}')
+    
     if [ -n "$MSG" ] && [ -n "$TAG" ]; then
         git add . && git commit -m "$TAG: $MSG" && git tag $TAG
         _git_push_auto $TAG
         echo "[OK] 备份完成 $TAG"
         return
     fi
+    
+    # 交互式引导流
     echo "" && echo "[Pkg] dotfiles 备份" && echo "-----------------"
     read -p "备注信息: " MSG
     [ -z "$MSG" ] && echo "已取消" && return
@@ -1841,6 +1851,7 @@ ${agentBackupLines}
 }
 
 oc-rec() {
+    # --- 统一恢复策略 (含版本切换) ---
     cd ~/dotfiles
     ${proxy ? `PROXY=$(_detect_proxy)
     if [ -n "$PROXY" ]; then HTTPS_PROXY=$PROXY git fetch --tags 2>/dev/null
@@ -1849,6 +1860,8 @@ oc-rec() {
     git tag --sort=-version:refname | head -20
     echo "" && read -p "恢复到哪个版本（回车取消）: " TAG
     [ -z "$TAG" ] && echo "已取消" && return
+    
+    # 执行物理文件覆盖
     git checkout $TAG
     cp bash_profile ~/.bash_profile
     cp openclaw.json ~/.openclaw/openclaw.json
@@ -2248,10 +2261,10 @@ brew install ollama && ollama pull nomic-embed-text
       const destFull = ST.ab.agent === 'root' ? name : `workspace-${ST.ab.agent}/${name}`;
       const srcFull = `${baseSrc}/${name}`;
       let newLine = ST.ab.type === 'dir'
-        ? `    rsync -a ${excOn && excVal ? excVal.split(',').map(e => `--exclude="${e.trim()}/" `).join('') : ''}${srcFull}/ ${destFull}/` // --delete removed: add-backup must not delete destination files
-        : `    [ -f ${srcFull} ] && cp ${srcFull} ${destFull}`;
+        ? `    rsync -a ${excOn && excVal ? excVal.split(',').map(e => `--exclude="${e.trim()}/" `).join('') : ''}${srcFull}/ ${destFull}/` // 此行由 octool 生成：将工作区子目录备份到 dotfiles
+        : `    [ -f ${srcFull} ] && cp ${srcFull} ${destFull}`; // 此行由 octool 生成：将工作区单个文件备份到 dotfiles
 
-      const sedCmd = `sed -i '' '${ST.ab.anchorLine}a\\\n${newLine}' ~/.bash_profile`;
+      const sedCmd = `# 向 ~/.bash_profile 插入新的备份指令\nsed -i '' '${ST.ab.anchorLine}a\\\n${newLine}' ~/.bash_profile`;
       setBoxText('ab-cmd', sedCmd);
 
       // 增加的 oc-save 提示步骤
