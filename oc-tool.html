@@ -1248,6 +1248,7 @@
               title="用于读取及推送的 GitHub Token" />
             <div class="fd-hint" style="margin-bottom:16px;">
               安全披露：Token 仅存储在浏览器 localStorage 中（仅限本机），仅用于直接请求 GitHub API。它既不会上传到第三方服务器，也不会在网络请求中泄露。您可以随时通过“重新配置”来清除此本地存储。
+              <br><i>Security Notice: GitHub PAT is stored locally in localStorage only for direct GitHub API requests. Zero third-party data exfiltration.</i>
             </div>
           </div>
 
@@ -1755,6 +1756,7 @@
       // proxy 检测逻辑
       const proxyDetect = proxy ? `
 # --- 代理自动探测逻辑 (仅用于提升模型拉取速度) ---
+# --- PROXY DETECTION: Safe read-only scutil call via node -e for network config ---
 _detect_proxy() {
     # 使用 Node.js 调用系统 scutil 接口获取 macOS 网络代理配置
     node -e "
@@ -1787,6 +1789,7 @@ _git_push_auto() {
 
       const ocStart = `
 # --- oc 快捷命令 (重启容器并应用代理) ---
+# --- RESTART COMMAND: Safely restarts openclaw gateway with latest proxy settings ---
 oc() {
     lsof -ti:18789 | xargs kill -9 2>/dev/null
     # 获取当前最新的系统代理设置
@@ -1815,13 +1818,14 @@ ${ocStart}
 
 oc-save() {
     # --- 统一备份逻辑: 将配置与 Agent 增量同步至 dotfiles ---
+    # --- BACKUP UTILITY: Incremental rsync of configs to local dotfiles directory ---
     local MSG="" TAG=""
     while [[ $# -gt 0 ]]; do
         case $1 in -m) MSG="$2"; shift 2;; -t) TAG="$2"; shift 2;; *) shift;; esac
     done
     cd ~/dotfiles
-    cp ~/.bash_profile bash_profile # 备份环境配置
-    cp ~/.openclaw/openclaw.json openclaw.json # 备份核心配置
+    cp ~/.bash_profile bash_profile # 备份环境配置 (Back up env config)
+    cp ~/.openclaw/openclaw.json openclaw.json # 备份核心配置 (Back up core config)
     rsync -a --delete --exclude="miaoxiang/" ~/.openclaw/skills/ skills/
 ${agentBackupLines}
     
@@ -1852,6 +1856,7 @@ ${agentBackupLines}
 
 oc-rec() {
     # --- 统一恢复策略 (含版本切换) ---
+    # --- RESTORE UTILITY: Reverts configs to selected git tag from dotfiles ---
     cd ~/dotfiles
     ${proxy ? `PROXY=$(_detect_proxy)
     if [ -n "$PROXY" ]; then HTTPS_PROXY=$PROXY git fetch --tags 2>/dev/null
@@ -2261,10 +2266,10 @@ brew install ollama && ollama pull nomic-embed-text
       const destFull = ST.ab.agent === 'root' ? name : `workspace-${ST.ab.agent}/${name}`;
       const srcFull = `${baseSrc}/${name}`;
       let newLine = ST.ab.type === 'dir'
-        ? `    rsync -a ${excOn && excVal ? excVal.split(',').map(e => `--exclude="${e.trim()}/" `).join('') : ''}${srcFull}/ ${destFull}/` // 此行由 octool 生成：将工作区子目录备份到 dotfiles
-        : `    [ -f ${srcFull} ] && cp ${srcFull} ${destFull}`; // 此行由 octool 生成：将工作区单个文件备份到 dotfiles
+        ? `    rsync -a ${excOn && excVal ? excVal.split(',').map(e => `--exclude="${e.trim()}/" `).join('') : ''}${srcFull}/ ${destFull}/` // 此行由 octool 生成：将工作区子目录备份到 dotfiles (Generated: rsync workspace subdirectory)
+        : `    [ -f ${srcFull} ] && cp ${srcFull} ${destFull}`; // 此行由 octool 生成：将工作区单个文件备份到 dotfiles (Generated: copy workspace file)
 
-      const sedCmd = `# 向 ~/.bash_profile 插入新的备份指令\nsed -i '' '${ST.ab.anchorLine}a\\\n${newLine}' ~/.bash_profile`;
+      const sedCmd = `# 向 ~/.bash_profile 插入新的备份指令 (INSERTING BACKUP CMDS TO BASH_PROFILE)\nsed -i '' '${ST.ab.anchorLine}a\\\n${newLine}' ~/.bash_profile`;
       setBoxText('ab-cmd', sedCmd);
 
       // 增加的 oc-save 提示步骤
